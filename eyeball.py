@@ -4,16 +4,27 @@ import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaMPx as OpenMayaMPx
 
-kPluginCmdName = "eyeball"
 
-kPupilFlagName = "pupil"
-kIrisFlagName = "iris"
-kCorneaBulgeFlagName = "corneaBulge"
-kIrisConcaveFlagName = "irisConcave"
+gPupilValue = 0.7
+gIrisValue = 2.75
+gCorneaBulgeValue = 10
+gIrisConcaveValue = 10
 
+gNamespace='eyeball1'
+#gEyeballCtrler='eyeballCtrl1'
 
+def run():
 
+    UI()
+    
+    
+    
+def createNew(*args):
 
+    buildEyeballGeo()
+
+    
+    
 def UI():
     print 'enterUI'
     if cmds.window('eyeballWindow', exists=True):
@@ -39,15 +50,18 @@ def UI():
     cmds.text('iris_concave', align='left')
     cmds.floatField(value=10)
     
-    #reset button
+    #buttons
     cmds.setParent(mainLayout)   
     cmds.separator(h=15, style='none')
     cmds.rowColumnLayout(numberOfColumns=2, cw=[(1,100),(2,180)], columnOffset=[(1,'both',5),(2,'both',5)])
     cmds.button(label='reset values', c=reset)
-    cmds.text('')
+    cmds.button(label='create new', c=createNew)
+    cmds.button(label='setCurrent')
     cmds.separator(h=5, style='none')
         
     cmds.showWindow(window)
+    
+    
     
 def changeIrisSize(*args):
     irisSize=args[0]
@@ -59,185 +73,154 @@ def reset(*args):
 
 
 
-# Command
-class scriptedCommand(OpenMayaMPx.MPxCommand):
-    def __init__(self):
-        OpenMayaMPx.MPxCommand.__init__(self)
-        
-    # Invoked when the command is run.
-    def doIt(self,argList):
-        print 'enter doIt'
-        self.parseArguments(argList)
-        self.calcExpressions()
-        self.buildEyeballGeo()
+def linstep(start, end, para):
+    if para>=end:
+        return 1;
+    elif para<=start:
+        return 0;
+    else:
+        return (para-start)/(end-start)
 
 
 
-    def buildEyeballGeo(self):
-#conea-------------------------------------------------------------------------------------
-        #create eyeball base geometry and detach
-        cmds.sphere(name='eyeballSphere', sections=20, spans=20, axis=(0,0,1), radius=0.5)     
-        pieceNames = cmds.detachSurface('eyeballSphere', ch=1, rpo=1, parameter=(self.cornea_par,20))
-        cmds.rename(pieceNames[0],'corneaGeo')
+def buildEyeballGeo():  
 
-        #add lattice and deform cornea
-        cmds.select('corneaGeo')
-        latticeNames = cmds.lattice(dv=(2,2,6), oc=False)
-        cmds.rename(latticeNames[0], 'corneaLat')
-        cmds.rename(latticeNames[1], 'corneaLatGeo')
-        cmds.rename(latticeNames[2], 'corneaLatGeoBase')
-        
-        cmds.createNode('transform', name='corneaDetachRider')
-        cmds.createNode('transform', name='corneaDetachGrp')
-        cmds.createNode('transform', name='corneaRadius')
-                
-        cmds.parent('corneaDetachGrp', 'corneaDetachRider', relative=True)
-        cmds.parent('corneaRadius', 'corneaDetachRider', relative=True)
-        cmds.parent('corneaLatGeo', 'corneaDetachGrp', relative=True)
-        cmds.parent('corneaLatGeoBase', 'corneaDetachGrp', relative=True)
-        
-        cmds.setAttr('corneaDetachRider.translateZ', self.cornea_tz)
-        cmds.setAttr('corneaRadius.translateX', self.cornea_rad)
-        cmds.setAttr('corneaDetachGrp.translateZ', (0.5-self.cornea_tz)*0.5)
-        cmds.setAttr('corneaDetachGrp.scaleX', self.cornea_rad*2.0)
-        cmds.setAttr('corneaDetachGrp.scaleY', self.cornea_rad*2.0)
-        cmds.setAttr('corneaDetachGrp.scaleZ', 0.5-self.cornea_tz)
-        cmds.setAttr('corneaLatGeo.scale', 1.1, 1.1, 1.1)
-        cmds.setAttr('corneaLatGeoBase.scale', 1.1, 1.1, 1.1)
-        
-        #deform latticeGeo
-        for x in range(0,2):
-            for y in range(0,2):
-                for z in range(3,6):
-                    pointNameStr='corneaLatGeo.pt['+str(x)+']['+str(y)+']['+str(z)+']'
-                    cmds.select(pointNameStr)
-                    cmds.move(0, 0, 0.05, r=True)
+# #add namespace
+#     cnt=1
+#     global gNamespace
+#     while cmds.namespace(exists=gNamespace):
+#         cnt=cnt+1
+#         gNamespace='eyeball'+str(cnt)
+#     cmds.namespace(add=gNamespace)
+#     cmds.namespace(set=gNamespace)
 
-        #to what extend does the geometry deform from latticeGeoBase to latticeGeo
-        corneaEnvelope = (1.0 - (self.linstep(0.0,11.0,self.irisFlagValue))) * (self.corneaBulgeFlagValue * 0.1);
-        cmds.setAttr('corneaLat.envelope', corneaEnvelope)
+#create eyeball controler-----------------------------------------------------------------------------------------
 
+    gEyeballCtrler='eyeballCtrl'
+    cmds.spaceLocator(name=gEyeballCtrler)
+    cmds.addAttr(longName='pupilSize', attributeType='float', keyable=True, defaultValue=0.7)
+    cmds.addAttr(longName='irisSize', attributeType='float', keyable=True, defaultValue=2.75)
+    cmds.addAttr(longName='irisConcave', attributeType='float', keyable=True, defaultValue=10)
+    cmds.addAttr(longName='corneaBulge', attributeType='float', keyable=True, defaultValue=10)
+    
+    
+#cornea-----------------------------------------------------------------------------------------
+
+    #create eyeball base geometry and detach
+    cmds.sphere(name='eyeballSphere', sections=20, spans=20, axis=(0,0,1), radius=0.5)     
+    pieceNames = cmds.detachSurface('eyeballSphere', ch=1, rpo=1, parameter=(0.1,20))
+    cmds.rename(pieceNames[0],'corneaGeo')
+    cmds.rename(pieceNames[2],'corneaDetach')
+    cmds.parent('eyeballSphere', gEyeballCtrler, relative=True)
+    cmds.parent('corneaGeo', gEyeballCtrler, relative=True)
+
+    #add lattice and deform cornea
+    cmds.select('corneaGeo')
+    latticeNames = cmds.lattice(dv=(2,2,6), oc=False)
+    cmds.rename(latticeNames[0], 'corneaLat')
+    cmds.rename(latticeNames[1], 'corneaLatGeo')
+    cmds.rename(latticeNames[2], 'corneaLatGeoBase')
+    cmds.setAttr('corneaLatGeo.scale', 1.1, 1.1, 1.1)
+    cmds.setAttr('corneaLatGeoBase.scale', 1.1, 1.1, 1.1)
+    
+    cmds.createNode('transform', name='corneaDetachRider')
+    cmds.createNode('transform', name='corneaDeformGrp')
+    cmds.createNode('transform', name='corneaRadius')
+            
+    cmds.parent('corneaDeformGrp', 'corneaDetachRider', relative=True)
+    cmds.parent('corneaRadius', 'corneaDetachRider', relative=True)
+    cmds.parent('corneaLatGeo', 'corneaDeformGrp', relative=True)
+    cmds.parent('corneaLatGeoBase', 'corneaDeformGrp', relative=True)
+    cmds.parent('corneaDetachRider', gEyeballCtrler, relative=True)
+    
+    cmds.hide('corneaDetachRider')
+    
+    
 #iris-----------------------------------------------------------------------------------------
 
-        #create eyeball base geometry and detach
-        cmds.sphere(name='eyeballSphere2', sections=20, spans=20, axis=(0,0,1), radius=0.5)     
-        pieceNames = cmds.detachSurface('eyeballSphere2', ch=1, rpo=1, parameter=(self.iris_par,20))
-        cmds.rename(pieceNames[0],'irisGeo')
-        cmds.delete('eyeballSphere2')
+    #create eyeball base geometry and detach
+    cmds.sphere(name='eyeballSphere2', sections=20, spans=20, axis=(0,0,1), radius=0.5)     
+    pieceNames = cmds.detachSurface('eyeballSphere2', ch=1, rpo=1, parameter=(0.1,20))
+    cmds.rename(pieceNames[0],'irisGeo')
+    cmds.rename(pieceNames[2],'irisDetach')
+    cmds.delete('eyeballSphere2')
+    cmds.parent('irisGeo', gEyeballCtrler, relative=True)
 
-        #add lattice and deform iris
-        cmds.select('irisGeo')
-        latticeNames = cmds.lattice(dv=(2,2,2), oc=False)
-        cmds.rename(latticeNames[0], 'irisLat')
-        cmds.rename(latticeNames[1], 'irisLatGeo')
-        cmds.rename(latticeNames[2], 'irisLatGeoBase')
-        
-        cmds.createNode('transform', name='irisDetachRider')
-        cmds.createNode('transform', name='irisDetachGrp')
-        cmds.createNode('transform', name='irisRadius')
-                
-        cmds.parent('irisDetachGrp', 'irisDetachRider', relative=True)
-        cmds.parent('irisRadius', 'irisDetachRider', relative=True)
-        cmds.parent('irisLatGeo', 'irisDetachGrp', relative=True)
-        cmds.parent('irisLatGeoBase', 'irisDetachGrp', relative=True)
-        
-        cmds.setAttr('irisDetachRider.translateZ', self.iris_tz)
-        cmds.setAttr('irisRadius.translateX', self.iris_rad)
-        cmds.setAttr('irisDetachGrp.translateZ', (0.5-self.iris_tz)*0.5)
-        cmds.setAttr('irisLatGeo.translateZ', -0.5)
-        cmds.setAttr('irisLatGeoBase.translateZ', -0.5)
-        cmds.setAttr('irisLatGeo.scale', 1.1, 1.1, -2)
-        cmds.setAttr('irisLatGeoBase.scale', 1.1, 1.1, 2)
-        cmds.setAttr('irisDetachGrp.scaleX', self.iris_rad*2.0)
-        cmds.setAttr('irisDetachGrp.scaleY', self.iris_rad*2.0)
-        cmds.setAttr('irisDetachGrp.scaleZ', 0.5-self.iris_tz)
-               
-        #to what extend does the geometry deform from latticeGeoBase to latticeGeo
-        cmds.setAttr('irisLat.envelope', self.irisConcaveFlagValue * 0.1)
+    #add lattice and deform iris
+    cmds.select('irisGeo')
+    latticeNames = cmds.lattice(dv=(2,2,2), oc=False)
+    cmds.rename(latticeNames[0], 'irisLat')
+    cmds.rename(latticeNames[1], 'irisLatGeo')
+    cmds.rename(latticeNames[2], 'irisLatGeoBase')
+    cmds.setAttr('irisLatGeo.scale', 1.1, 1.1, -2)
+    cmds.setAttr('irisLatGeoBase.scale', 1.1, 1.1, 2)
+    cmds.setAttr('irisLatGeo.translateZ', -0.5)
+    cmds.setAttr('irisLatGeoBase.translateZ', -0.5)
+    
+    cmds.createNode('transform', name='irisDetachRider')
+    cmds.createNode('transform', name='irisDeformGrp')
+    cmds.createNode('transform', name='irisRadius')
+            
+    cmds.parent('irisDeformGrp', 'irisDetachRider', relative=True)
+    cmds.parent('irisRadius', 'irisDetachRider', relative=True)
+    cmds.parent('irisLatGeo', 'irisDeformGrp', relative=True)
+    cmds.parent('irisLatGeoBase', 'irisDeformGrp', relative=True)
+    cmds.parent('irisDetachRider', gEyeballCtrler, relative=True)
 
-#pupil----------------------------------------------------------------------------------------
-        #create eyeball base geometry and detach       
-        pieceNames = cmds.detachSurface('irisGeo', ch=1, rpo=1, parameter=(self.pupil_par,20))
-        cmds.rename(pieceNames[0],'pupilGeo')
-
-        #hide auxiliary nodes
-        cmds.hide('corneaDetachRider')
-        cmds.hide('irisDetachRider')
-
-
-
-    def testFunc(self):
-        print 'enter testFunc'
-
-
-    def linstep(self, start, end, para):
-        if para>=end:
-            return 1;
-        elif para<=start:
-            return 0;
-        else:
-            return (para-start)/(end-start)
+    cmds.hide('irisDetachRider')
+    
+#pupil-----------------------------------------------------------------------------------------
+    #detach from iris geometry       
+    pieceNames = cmds.detachSurface('irisGeo', ch=1, rpo=1, parameter=(0.1,20))
+    cmds.rename(pieceNames[0], 'pupilGeo')
+    cmds.rename(pieceNames[2], 'pupilDetach')
+    cmds.parent('pupilGeo', gEyeballCtrler, relative=True)
     
     
-    def calcExpressions(self):
-        # cornea translate Z
-        self.cornea_tz = (math.cos(math.radians(self.irisFlagValue*9.0))) * 0.5
-        # cornea radius
-        self.cornea_rad  = ( math.sin(math.radians(self.irisFlagValue*9.0)) ) * 0.5
-        #define nurbs surface cornea detach position
-        self.cornea_par  = ((1.0 - self.linstep( 0.0,10.0,self.irisFlagValue )) * 10.0 ) + 10.0
-
-        #define nurbs surface iris detach position
-        self.iris_par = ((1.0 - ((self.irisFlagValue+0.3)*0.1)) * 10.0 ) + 10.0
-        self.iris_tz =  ( math.cos(math.radians((self.irisFlagValue+0.3)*9.0)) ) * 0.485
-        self.iris_rad = ( math.sin(math.radians((self.irisFlagValue+0.3)*9.0)) ) * 0.485        
-        
-        #define nurbs surface pupil detach position
-        self.pupil_par = max( (((1.0 - ((self.pupilFlagValue)*0.1)) * 10.0 ) + 10.0), self.iris_par + 0.1 )
-
- 
-        
-     
-    def parseArguments(self, argList):
-        print 'enter parseArg'
-        #default valuess
-        self.pupilFlagValue = 0.7
-        self.irisFlagValue = 2.75
-        self.corneaBulgeFlagValue = 10
-        self.irisConcaveFlagValue = 10
-       
-#        argData = OpenMaya.MArgParser( self.syntax(), argList )
-#         if argData.isFlagSet(kPupilFlagName):
-#             self.pupilFlagValue = argData.flagArgumentInt( kPupilFlagName, 0 )
-#         if argData.isFlagSet (kIrisFlagName):
-#             self.irisFlagValue = argData.flagArgumentInt( kIrisFlagName, 0 )
-#         if argData.isFlagSet(kCorneaBulgeFlagName):
-#             self.corneaBulgeFlagValue = argData.flagArgumentInt( kCorneaBulgeFlagName, 0 )
-#         if argData.isFlagSet(kIrisConcaveFlagName):
-#             self.irisConcaveFlagValue = argData.flagArgumentInt( kIrisConcaveFlagName, 0 ) 
-
-        print 'leave parseArg'
-
-
-
-
-# Creator
-def cmdCreator():
-    return OpenMayaMPx.asMPxPtr( scriptedCommand() )
+#connect attributes-----------------------------------------------------------------------------------------
     
-# Initialize the script plug-in
-def initializePlugin(mobject):
-    mplugin = OpenMayaMPx.MFnPlugin(mobject)
-    try:
-        mplugin.registerCommand( kPluginCmdName, cmdCreator )
-    except:
-        sys.stderr.write( "Failed to register command: %s\n" % kPluginCmdName )
-        raise
+    expressionStr='''
+                    //calculate cornea-related parameters
+                    //cornea translate Z
+                    float $cornea_tz = (cos(deg_to_rad('''+gEyeballCtrler+'''.irisSize*9.0))) * 0.5;
+                    //cornea radius
+                    float $cornea_rad  = (sin(deg_to_rad('''+gEyeballCtrler+'''.irisSize*9.0))) * 0.5;
+                    //define nurbs surface cornea detach position
+                    float $cornea_par  = ((1.0 - linstep( 0.0,10.0,'''+gEyeballCtrler+'''.irisSize)) * 10.0 ) + 10.0;
+                    corneaDetach.parameter[0] = $cornea_par;
+                    corneaDetachRider.translateZ = $cornea_tz;
+                    corneaRadius.translateX = $cornea_rad;
+                    corneaDeformGrp.translateZ = ( 0.5 - $cornea_tz ) * 0.5;
+                    corneaDeformGrp.scaleX = corneaDeformGrp.scaleY = $cornea_rad * 2.0;
+                    corneaDeformGrp.scaleZ = ( 0.5 - $cornea_tz );
+                    corneaLat.envelope = (1.0 - (smoothstep(0.0,11.0,'''+gEyeballCtrler+'''.irisSize))) * ('''+gEyeballCtrler+'''.corneaBulge * 0.1);
+                    
+                    //calculate iris-related parameters
+                    float $iris_tz   = ( cos(deg_to_rad(('''+gEyeballCtrler+'''.irisSize+0.3)*9.0)) ) * 0.485;
+                    float $iris_rad  = ( sin(deg_to_rad(('''+gEyeballCtrler+'''.irisSize+0.3)*9.0)) ) * 0.485;
+                    float $iris_par  = ((1.0 - (('''+gEyeballCtrler+'''.irisSize+0.3)*0.1)) * 10.0 ) + 10.0;
+                    irisDetach.parameter[0] = $iris_par;
+                    irisDetachRider.translateZ = $iris_tz;
+                    irisRadius.translateX = $iris_rad;
+                    irisDeformGrp.translateZ = ( 0.5 - $iris_tz ) * 0.5;
+                    irisDeformGrp.scaleX = irisDeformGrp.scaleY = $iris_rad * 2.0;
+                    irisDeformGrp.scaleZ = ( 0.5 - $iris_tz );
+                    irisLat.envelope = '''+gEyeballCtrler+'''.irisConcave * 0.1;
+                    
+                    float $pupil_par = max( (((1.0 - (('''+gEyeballCtrler+'''.pupilSize)*0.1)) * 10.0 ) + 10.0), $iris_par + 0.1 );
+                    pupilDetach.parameter[0] = $pupil_par;
+                    '''
+    
+    cmds.expression(s=expressionStr)
 
-# Uninitialize the script plug-in
-def uninitializePlugin(mobject):
-    mplugin = OpenMayaMPx.MFnPlugin(mobject)
-    try:
-        mplugin.deregisterCommand( kPluginCmdName )
-    except:
-        sys.stderr.write( "Failed to unregister command: %s\n" % kPluginCmdName )
+    #deform latticeGeo
+    for x in range(0,2):
+        for y in range(0,2):
+            for z in range(3,6):
+                pointNameStr='corneaLatGeo.pt['+str(x)+']['+str(y)+']['+str(z)+']'
+                cmds.select(pointNameStr)
+                cmds.move(0, 0, 0.05, r=True)
+    
+    cmds.namespace(set=':')
+
+    
