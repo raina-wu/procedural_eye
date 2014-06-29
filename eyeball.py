@@ -10,8 +10,8 @@ gIrisValue = 2.75
 gCorneaBulgeValue = 10
 gIrisConcaveValue = 10
 
-gNamespace='eyeball1'
-#gEyeballCtrler='eyeballCtrl1'
+
+gEyeballCtrler=''
 
 def run():
 
@@ -38,17 +38,19 @@ def UI():
     imagePath=cmds.internalVar(upd=True)+"icon/eyeballBanner.jpg"
     cmds.image(image=imagePath, w=280)
     cmds.separator(h=15, style='none')
+    cmds.text('objInfo', label='', align='left')
+    cmds.separator(h=5, style='none')
 
     #input editor
     cmds.rowColumnLayout(numberOfColumns=2, cw=[(1,100),(2,180)], columnOffset=[(1,'both',5),(2,'both',5)])
     cmds.text('iris_size', align='left')
-    cmds.floatField('irisSizeField', value=2.75, cc=changeIrisSize)
+    cmds.floatField('irisSizeField', value=2.75, cc=setIrisSize)
     cmds.text('pupil_size', align='left')
-    cmds.floatField(value=0.7)
+    cmds.floatField('pupilSizeField', value=0.7, cc=setPupilSize)
     cmds.text('cornea_bulge', align='left')
-    cmds.floatField(value=10)
+    cmds.floatField('corneaBulgeField', value=10, cc=setCorneaBulge)
     cmds.text('iris_concave', align='left')
-    cmds.floatField(value=10)
+    cmds.floatField('irisConcaveField', value=10, cc=setIrisConcave)
     
     #buttons
     cmds.setParent(mainLayout)   
@@ -56,26 +58,97 @@ def UI():
     cmds.rowColumnLayout(numberOfColumns=2, cw=[(1,100),(2,180)], columnOffset=[(1,'both',5),(2,'both',5)])
     cmds.button(label='reset values', c=reset)
     cmds.button(label='create new', c=createNew)
-    cmds.button(label='setCurrent')
+    cmds.button(label='set current', c=setCurrent)
     cmds.separator(h=5, style='none')
         
     cmds.showWindow(window)
     
     
     
-def changeIrisSize(*args):
-    irisSize=args[0]
-    print 'enter changePupilSize'
+
+
+def setCurrent(*args):
+
+    selected=cmds.ls(selection=True)
+    
+    if len(selected)!=1:
+        cmds.error('More than one object selected. Please select only one eyeControler.')
+    else:
+        try:
+            nodeName=selected[0]
+            pupilValue=cmds.getAttr(nodeName+'.pupilSize')
+            irisValue=cmds.getAttr(nodeName+'.irisSize')
+            irisConcave=cmds.getAttr(nodeName+'.irisConcave')
+            corneaBulge=cmds.getAttr(nodeName+'.corneaBulge')
+            
+            gPupilValue=pupilValue
+            gIrisValue=irisValue
+            gIrisConcave=irisConcave
+            gCorneaBulge=corneaBulge
+            
+            global gEyeballCtrler
+            gEyeballCtrler=nodeName   
+            
+            cmds.text('objInfo', edit=True, label='current controler: '+gEyeballCtrler)
+            cmds.floatField('pupilSizeField', edit=True, value=pupilValue)
+            cmds.floatField('irisSizeField', edit=True, value=irisValue)
+            cmds.floatField('irisConcaveField', edit=True, value=irisConcave)
+            cmds.floatField('corneaBulgeField', edit=True, value=corneaBulge)
+    
+        except:
+            cmds.error('Eyeball attributes missing. This command requires one eyeControler object to be selected.')
 
     
-def reset(*args):
-    selected=cmds.ls(selection=True)
-    if len(selected)!=1 or cmds.nodeType(selected[0])!='locator':
-        raise RuntimeError, 'Please select one eyeControler.'
-    else:
-        print 'enter reset, selected:'
-        print selected
 
+def reset(*args):
+
+    if len(gEyeballCtrler)==0:
+        cmds.error('Please set current eyeball controler.')
+    else:
+        setPupilSize(0.7)
+        setIrisSize(2.75)
+        setCorneaBulge(10)
+        setIrisConcave(10)
+        cmds.floatField('pupilSizeField', edit=True, value=0.7)
+        cmds.floatField('irisSizeField', edit=True, value=2.75)
+        cmds.floatField('irisConcaveField', edit=True, value=10)
+        cmds.floatField('corneaBulgeField', edit=True, value=10)
+    
+
+
+
+def setPupilSize(*args):
+    print args
+    if len(gEyeballCtrler)==0:
+        cmds.error('Please set current eyeball controler.')
+    else:
+        gPupilValue=args[0]
+        cmds.setAttr(gEyeballCtrler+'.pupilSize', gPupilValue)
+    
+    
+def setIrisSize(*args):
+    print args
+    if len(gEyeballCtrler)==0:
+        cmds.error('Please set current eyeball controler.')
+    else:
+        gIrisValue=args[0]
+        cmds.setAttr(gEyeballCtrler+'.irisSize', gIrisValue)
+        
+def setIrisConcave(*args):
+    print args
+    if len(gEyeballCtrler)==0:
+        cmds.error('Please set current eyeball controler.')
+    else:
+        gIrisConcaveValue=args[0]
+        cmds.setAttr(gEyeballCtrler+'.irisConcave', gIrisConcaveValue)
+
+def setCorneaBulge(*args):
+    print args
+    if len(gEyeballCtrler)==0:
+        cmds.error('Please set current eyeball controler.')
+    else:
+        gCorneaBulgeValue=args[0]
+        cmds.setAttr(gEyeballCtrler+'.corneaBulge', gCorneaBulgeValue)        
 
 
 def linstep(start, end, para):
