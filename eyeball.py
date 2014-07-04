@@ -17,10 +17,11 @@ gIrisConcaveValue = gDefaultIrisConcaveValue
 
 
 gEyeballCtrler=''
+gNameSpace=':'
 
 def run():
-
     UI()
+    createNew()
 
 def buildScleraShadingNetwork():
 #     try:
@@ -345,6 +346,9 @@ def createNew(*args):
             
         cmds.namespace(add=nameSpace)
         cmds.namespace(set=nameSpace)
+        
+        gNameSpace=nameSpace
+        
         buildEyeballGeo()
         
         buildIrisShadingNetwork()
@@ -363,8 +367,11 @@ def createNew(*args):
         cmds.select(nameSpace+':corneaGeo')
         cmds.hyperShade(assign=nameSpace+':cornea_shd')    
         
-        cmds.namespace(set=':')
+        cmds.select(gNameSpace+':eyeballCtrler', r=True)
+        setCurrent()
         
+        cmds.namespace(set=':')
+        gNameSpace=':'
 #     except:
 #         cmds.namespace(set=':')
 
@@ -383,7 +390,7 @@ def UI():
     imagePath=cmds.internalVar(upd=True)+"icon/eyeballBanner.jpg"
     cmds.image(image=imagePath, w=280)
     cmds.separator(h=15, style='none')
-    cmds.text('objInfo', label='', align='left')
+    cmds.text('objInfo', label='current controler: '+gEyeballCtrler, align='left')
     cmds.separator(h=5, style='none')
 
     #input editor
@@ -396,6 +403,9 @@ def UI():
     cmds.floatField('corneaBulgeField', value=gDefaultCorneaBulgeValue, cc=setCorneaBulge)
     cmds.text('iris_concave', align='left')
     cmds.floatField('irisConcaveField', value=gDefaultIrisConcaveValue, cc=setIrisConcave)
+    
+    #check box
+    cmds.checkBox('scleraVeinChkBox', label='sclera_vein', value=True, cc=setScleraVein)
     
     #buttons
     cmds.setParent(mainLayout)   
@@ -410,6 +420,16 @@ def UI():
     
     
     
+def setScleraVein(*args):
+    print"gnamespace"
+    print gNameSpace
+    if args[0]==True:
+        cmds.setAttr(gNameSpace+':sclera_vein_noise.colorGain', 1, 1, 1)
+        cmds.setAttr(gNameSpace+':sclera_vein_noise.colorOffset', 0, 0, 0)
+    else:
+        cmds.setAttr(gNameSpace+':sclera_vein_noise.colorGain', 0, 0, 0)
+        cmds.setAttr(gNameSpace+':sclera_vein_noise.colorOffset', 1, 1, 1)
+        
 
 
 def setCurrent(*args):
@@ -439,10 +459,20 @@ def setCurrent(*args):
             cmds.floatField('irisSizeField', edit=True, value=irisValue)
             cmds.floatField('irisConcaveField', edit=True, value=irisConcave)
             cmds.floatField('corneaBulgeField', edit=True, value=corneaBulge)
-    
+            
+            global gNameSpace
+            gNameSpace=nodeName.rsplit(':', 1)[0]
+            print gNameSpace
+            colorOffset=cmds.getAttr(gNameSpace+':sclera_vein_noise.colorOffset')
+            colorGain=cmds.getAttr(gNameSpace+':sclera_vein_noise.colorGain')
+            if colorOffset[0]==(1.0, 1.0, 1.0) or colorGain[0]==(0.0, 0.0, 0.0):
+                cmds.checkBox('scleraVeinChkBox', edit=True, value=False)
+            else:
+                cmds.checkBox('scleraVeinChkBox', edit=True, value=True)
+
         except:
             cmds.error('Eyeball attributes missing. This command requires one eyeControler object to be selected.')
-  
+   
 def reset(*args):
 
     if len(gEyeballCtrler)==0:
