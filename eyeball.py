@@ -558,6 +558,8 @@ def buildEyeballGeo():
         (corneaLat,corneaLatGeo,corneaLatGeoBase)= cmds.lattice(dv=(2,2,6), oc=False)
         cmds.setAttr(corneaLatGeo+'.scale', 1.1, 1.1, 1.1)
         cmds.setAttr(corneaLatGeoBase+'.scale', 1.1, 1.1, 1.1)
+        cmds.setAttr(corneaGeo+'.overrideEnabled', 1)
+        cmds.setAttr(corneaGeo+'.overrideColor', 3)
         
         corneaDetachRider=cmds.createNode('transform')
         corneaDeformGrp=cmds.createNode('transform')
@@ -589,6 +591,8 @@ def buildEyeballGeo():
         cmds.setAttr(irisLatGeoBase+'.scale', 1.1, 1.1, 2)
         cmds.setAttr(irisLatGeo+'.translateZ', -0.5)
         cmds.setAttr(irisLatGeoBase+'.translateZ', -0.5)
+        cmds.setAttr(irisGeo+'.overrideEnabled', 1)
+        cmds.setAttr(irisGeo+'.overrideColor', 13)
         
         irisDetachRider=cmds.createNode('transform')
         irisDeformGrp=cmds.createNode('transform')
@@ -608,6 +612,8 @@ def buildEyeballGeo():
         pupilGeo=pieceNames[0]
         pupilDetach=pieceNames[2]
         cmds.parent(pupilGeo, gEyeballCtrler, relative=True)
+        cmds.setAttr(pupilGeo+'.overrideEnabled', 1)
+        cmds.setAttr(pupilGeo+'.overrideColor', 17)
         
         
     #connect attributes-----------------------------------------------------------------------------------------

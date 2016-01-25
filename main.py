@@ -2,6 +2,12 @@ import maya.cmds as cmds
 
 cmds.flushUndo()
 
+cmds.unloadPlugin('unfolder.py')
+cmds.loadPlugin('unfolder.py')
+
+
+cmds.dagInfoCmd()
+
 # print cmds.pluginInfo('eyeball.py', query=True, loaded=True)
 # 
 # if cmds.pluginInfo('eyeball.py', query=True, loaded=True):
