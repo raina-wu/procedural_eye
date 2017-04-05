@@ -1,21 +1,13 @@
-import sys
-import math
 import maya.cmds as cmds
-import maya.OpenMaya as OpenMaya
-import maya.OpenMayaMPx as OpenMayaMPx
-
 
 gDefaultPupilValue = 0.7
 gDefaultIrisValue = 2.75
 gDefaultCorneaBulgeValue = 10
 gDefaultIrisConcaveValue = 5
-
 gPupilValue = gDefaultPupilValue
 gIrisValue = gDefaultIrisValue
 gCorneaBulgeValue = gDefaultCorneaBulgeValue
 gIrisConcaveValue = gDefaultIrisConcaveValue
-
-
 gEyeballCtrler=''
 gNameSpace=':'
 
@@ -187,12 +179,10 @@ def buildCorneaShadingNetwork():
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', cornea_trans_ramp+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize', cornea_trans_ramp+'.uvFilterSize')
-        
         cornea_col_ramp=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', cornea_col_ramp+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize', cornea_col_ramp+'.uvFilterSize')
-        
         cornea_noise=cmds.shadingNode('fractal', asTexture=True)
         placeFractalTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeFractalTex+'.outUV', cornea_noise+'.uv')
@@ -210,7 +200,6 @@ def buildCorneaShadingNetwork():
         cmds.setAttr(cornea_shd+'.diffuse_roughness', 0.3)
         cmds.setAttr(cornea_shd+'.reflectivity', 0.5)
         cmds.setAttr(cornea_shd+'.refr_ior', 1.3)
-        
         cmds.setAttr(cornea_col_gamma+'.gamma', 0.455, 0.455, 0.455)
         cmds.setAttr(cornea_trans_ramp+'.type', 1)
         cmds.setAttr(cornea_trans_ramp+'.interpolation', 4)
@@ -220,10 +209,8 @@ def buildCorneaShadingNetwork():
         cmds.setAttr(cornea_trans_ramp+'.colorEntryList[1].position', 0.2)
         cmds.setAttr(cornea_trans_ramp+'.colorEntryList[2].color', 0, 0, 0)
         cmds.setAttr(cornea_trans_ramp+'.colorEntryList[2].position', 0)
-    
         cmds.setAttr(cornea_col_ramp+'.colorEntryList[0].color', 0.875, 0.922, 0.950)
         cmds.setAttr(cornea_col_ramp+'.colorEntryList[0].position', 0)
-     
         cmds.setAttr(cornea_noise+'.ratio', 0.5)
         cmds.setAttr(cornea_noise+'.levelMax', 5)
         cmds.setAttr(placeFractalTex+'.coverage', 4, 1)
@@ -257,7 +244,7 @@ def buildIrisShadingNetwork():
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', iris_base_col_ramp+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize', iris_base_col_ramp+'.uvFilterSize')
-        
+
         iris_col_ramp=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', iris_col_ramp+'.uv')
@@ -337,16 +324,13 @@ def buildPupilShadingNetwork():
     
 def createNew(*args):
 #     try:
-        
         cnt=1
         nameSpace='eyeball'+str(cnt)
         while cmds.namespace(exists=nameSpace):
             cnt=cnt+1
             nameSpace='eyeball'+str(cnt)
-            
         cmds.namespace(add=nameSpace)
         cmds.namespace(set=nameSpace)
-        
         gNameSpace=nameSpace
         
         buildEyeballGeo()
@@ -375,7 +359,6 @@ def createNew(*args):
 #     except:
 #         cmds.namespace(set=':')
 
-    
     
 def UI():
     print 'enterUI'
@@ -419,7 +402,6 @@ def UI():
     cmds.showWindow(window)
     
     
-    
 def setScleraVein(*args):
     print"gnamespace"
     print gNameSpace
@@ -429,11 +411,9 @@ def setScleraVein(*args):
     else:
         cmds.setAttr(gNameSpace+':sclera_vein_noise.colorGain', 0, 0, 0)
         cmds.setAttr(gNameSpace+':sclera_vein_noise.colorOffset', 1, 1, 1)
-        
 
 
 def setCurrent(*args):
-
     selected=cmds.ls(selection=True)
     
     if len(selected)!=1:
@@ -474,7 +454,6 @@ def setCurrent(*args):
             cmds.error('Eyeball attributes missing. This command requires one eyeControler object to be selected.')
    
 def reset(*args):
-
     if len(gEyeballCtrler)==0:
         cmds.error('Please set current eyeball controler.')
     else:
@@ -530,17 +509,13 @@ def linstep(start, end, para):
 def buildEyeballGeo():  
 #     try:
     #create eyeball controler-----------------------------------------------------------------------------------------
-    
-    
         gEyeballCtrler=cmds.spaceLocator()[0]
         cmds.addAttr(longName='pupilSize', attributeType='float', keyable=True, defaultValue=gDefaultPupilValue)
         cmds.addAttr(longName='irisSize', attributeType='float', keyable=True, defaultValue=gDefaultIrisValue)
         cmds.addAttr(longName='irisConcave', attributeType='float', keyable=True, defaultValue=gDefaultIrisConcaveValue)
         cmds.addAttr(longName='corneaBulge', attributeType='float', keyable=True, defaultValue=gDefaultCorneaBulgeValue)
-        
-        
+
     #cornea-----------------------------------------------------------------------------------------
-    
         #create eyeball base geometry and detach
         eyeballSphere=cmds.sphere(sections=20, spans=20, axis=(0,0,1), radius=0.5)[0]
     #     eyeballSphere=eyeballSphere[0]
@@ -575,7 +550,6 @@ def buildEyeballGeo():
         
         
     #iris-----------------------------------------------------------------------------------------
-    
         #create eyeball base geometry and detach
         eyeballSphere2=cmds.sphere(sections=20, spans=20, axis=(0,0,1), radius=0.5)[0]
         pieceNames = cmds.detachSurface(eyeballSphere2, ch=1, rpo=1, parameter=(0.1,20))
@@ -617,7 +591,6 @@ def buildEyeballGeo():
         
         
     #connect attributes-----------------------------------------------------------------------------------------
-        
         expressionStr='''
                         //calculate cornea-related parameters
                         //cornea translate Z
@@ -652,7 +625,6 @@ def buildEyeballGeo():
         
         cmds.expression(s=expressionStr)
           
-        
         #deform latticeGeo
         for x in range(0,2):
             for y in range(0,2):
@@ -664,7 +636,6 @@ def buildEyeballGeo():
 #                     cmds.move(0, 0, 0.05, r=True)
      
     #rename objects------------------------------------
-       
         gEyeballCtrlerName='eyeballCtrler'
         
         cmds.rename(gEyeballCtrler, gEyeballCtrlerName)
