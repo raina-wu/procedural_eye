@@ -14,8 +14,8 @@ I wrote this script a long time ago as an exercise when I first started to learn
 import eyeball
 eyeball.run()
 ```
-![Procedural Eye UI]()
+![Procedural Eye UI](https://github.com/raina-wu/procedural_eye/blob/master/images/procedural_eye_ui.jpg)
 - Select the eyeball controler, and click `"set current"` to activate editting to the eyeball.
 - Adjust any attribtue and press `Enter`
 - Render with Mental Ray
-![Render Result]()
+![Render Result](https://github.com/raina-wu/procedural_eye/blob/master/images/demo_render.jpg)
