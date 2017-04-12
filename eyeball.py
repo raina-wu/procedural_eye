@@ -365,9 +365,9 @@ def UI():
     if cmds.window('eyeballWindow', exists=True):
         cmds.deleteUI('eyeballWindow')
         
-    window=cmds.window('eyeballWindow', title='eyeball editor', w=300, h=300, mnb=False, mxb=False, sizeable=False)
+    window=cmds.window('eyeballWindow', title='eyeball editor', w=300, h=320, mnb=False, mxb=False, sizeable=False)
     
-    mainLayout=cmds.columnLayout(w=300, h=300, columnOffset=('both',0))
+    mainLayout=cmds.columnLayout(w=300, h=320, columnOffset=('both',10), columnAlign="center")
     
     #banner image
     imagePath=cmds.internalVar(upd=True)+"icon/eyeballBanner.jpg"
