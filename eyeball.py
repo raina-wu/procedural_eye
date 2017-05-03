@@ -8,77 +8,81 @@ gPupilValue = gDefaultPupilValue
 gIrisValue = gDefaultIrisValue
 gCorneaBulgeValue = gDefaultCorneaBulgeValue
 gIrisConcaveValue = gDefaultIrisConcaveValue
-gEyeballCtrler=''
-gNameSpace=':'
+gEyeballCtrler = ''
+gNameSpace = ':'
+gRenderer = None
+gRenderPlugins = ["mtoa", "mayatomr"]
 
 def run():
     UI()
-    createNew()
+
+def checkRenderPlugin():
+    for renderPlugin in gRenderPlugins:
+        if cmds.pluginInfo(renderPlugin, query=True, loaded=True):
+            return renderPlugin
+        try:
+            cmds.loadPlugin(renderPlugin)
+            return renderPlugin
+        except:
+            cmds.warning("Unable to load {0} plugin.".format(renderPlugin))
+    return None
+
 
 def buildScleraShadingNetwork():
-#     try:
-        #add mia_material_shader
-        sclera_shd=cmds.shadingNode('mia_material_x', asShader=True)
-        shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=sclera_shd+'SG')
-        cmds.connectAttr(sclera_shd+'.message', shadingGrp+'.miMaterialShader')
-        cmds.connectAttr(sclera_shd+'.message', shadingGrp+'.miPhotonShader')
-        cmds.connectAttr(sclera_shd+'.message', shadingGrp+'.miShadowShader')
-        
-        #add utility shaders
+
+        # add utility shaders
         sclera_col_gamma=cmds.shadingNode('gammaCorrect', asUtility=True)
         sclera_noise_rev=cmds.shadingNode('reverse', asUtility=True)
         sclera_vein_noise_rev=cmds.shadingNode('reverse', asUtility=True)
         sclera_vein_noise_bump_md=cmds.shadingNode('multiplyDivide', asUtility=True)
         sclera_bump=cmds.shadingNode('bump2d', asUtility=True)
-        
-        #add texture shaders
+
+        # add texture shaders
         sclera_bright_col_ramp=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', sclera_bright_col_ramp+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize',sclera_bright_col_ramp+'.uvFilterSize')
-        
+
         sclera_vein_col_ramp=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', sclera_vein_col_ramp+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize',sclera_vein_col_ramp+'.uvFilterSize')
-        
+
         sclera_combo_col_ramp=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', sclera_combo_col_ramp+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize',sclera_combo_col_ramp+'.uvFilterSize')
-        
+
         sclera_vein_noise_threshold=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', sclera_vein_noise_threshold+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize',sclera_vein_noise_threshold+'.uvFilterSize')
-        
+
         sclera_bump_ramp=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', sclera_bump_ramp+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize',sclera_bump_ramp+'.uvFilterSize')
-        
+
         sclera_noise=cmds.shadingNode('fractal', asTexture=True)
         placeFractalTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeFractalTex+'.outUV', sclera_noise+'.uv')
         cmds.connectAttr(placeFractalTex+'.outUvFilterSize', sclera_noise+'.uvFilterSize')
-        
+
         sclera_vein_noise=cmds.shadingNode('fractal', asTexture=True)
         placeFractalTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeFractalTex+'.outUV', sclera_vein_noise+'.uv')
         cmds.connectAttr(placeFractalTex+'.outUvFilterSize', sclera_vein_noise+'.uvFilterSize')
-        
-        #connect nodes
+
+        # connect nodes
         cmds.connectAttr(sclera_noise+'.outColor', sclera_noise_rev+'.input')
         cmds.connectAttr(sclera_noise_rev+'.output', sclera_bright_col_ramp+'.colorGain')
         cmds.connectAttr(sclera_noise+'.outColor', sclera_bright_col_ramp+'.colorOffset')
         cmds.connectAttr(sclera_bright_col_ramp+'.outColor', sclera_combo_col_ramp+'.colorEntryList[1].color')
-        
+
         cmds.connectAttr(sclera_vein_col_ramp+'.outColor', sclera_combo_col_ramp+'.colorOffset')
         cmds.connectAttr(sclera_combo_col_ramp+'.outColor', sclera_col_gamma+'.value')
-        cmds.connectAttr(sclera_col_gamma+'.outValue', sclera_shd+'.diffuse')
         cmds.connectAttr(sclera_vein_noise+'.outColor', sclera_combo_col_ramp+'.colorGain')
-        
-        cmds.connectAttr(sclera_bump+'.outNormal', sclera_shd+'.overall_bump')
+
         cmds.connectAttr(sclera_bump_ramp+'.outColorR', sclera_bump+'.bumpValue')
         cmds.connectAttr(sclera_noise+'.outColor', sclera_bump_ramp+'.colorGain')
         cmds.connectAttr(sclera_vein_noise_bump_md+'.output', sclera_bump_ramp+'.colorOffset')
@@ -86,28 +90,25 @@ def buildScleraShadingNetwork():
         cmds.connectAttr(sclera_vein_noise_rev+'.output', sclera_vein_col_ramp+'.colorGain')
         cmds.connectAttr(sclera_vein_noise+'.outColor', sclera_vein_noise_rev+'.input')
         cmds.connectAttr(sclera_vein_noise_threshold+'.outColorR', sclera_vein_noise+'.threshold')
-        
-        #set node attributes
-        cmds.setAttr(sclera_shd+'.diffuse_roughness', 0.3)
-        cmds.setAttr(sclera_shd+'.reflectivity', 0.5)
-        
+
+        # set node attributes
         cmds.setAttr(sclera_col_gamma+'.gamma', 0.455, 0.455, 0.455)
         cmds.setAttr(sclera_combo_col_ramp+'.type', 1)
         cmds.setAttr(sclera_combo_col_ramp+'.interpolation', 4)
         cmds.setAttr(sclera_combo_col_ramp+'.colorEntryList[0].color', 0.461, 0.075, 0.075)
         cmds.setAttr(sclera_combo_col_ramp+'.colorEntryList[0].position', 0.5)
         cmds.setAttr(sclera_combo_col_ramp+'.colorEntryList[1].position', 1)
-    
+
         cmds.setAttr(sclera_bright_col_ramp+'.colorEntryList[0].color', 0.875, 0.922, 0.950)
         cmds.setAttr(sclera_bright_col_ramp+'.colorEntryList[0].position', 0)
-        
+
         cmds.setAttr(sclera_vein_col_ramp+'.type', 1)
         cmds.setAttr(sclera_vein_col_ramp+'.interpolation', 4)
         cmds.setAttr(sclera_vein_col_ramp+'.colorEntryList[0].color', 0.680, 0.462, 0.481)
         cmds.setAttr(sclera_vein_col_ramp+'.colorEntryList[0].position', 1)
         cmds.setAttr(sclera_vein_col_ramp+'.colorEntryList[1].color', 0.504, 0.063, 0.063)
         cmds.setAttr(sclera_vein_col_ramp+'.colorEntryList[1].position', 0.405)
-        
+
         cmds.setAttr(sclera_bump_ramp+'.type', 1)
         cmds.setAttr(sclera_bump_ramp+'.interpolation', 4)
         cmds.setAttr(sclera_bump_ramp+'.colorEntryList[0].color', 0, 0, 0)
@@ -116,7 +117,7 @@ def buildScleraShadingNetwork():
         cmds.setAttr(sclera_bump_ramp+'.colorEntryList[1].position', 0.95)
         cmds.setAttr(sclera_bump_ramp+'.colorEntryList[2].color', 0.3, 0.3, 0.3)
         cmds.setAttr(sclera_bump_ramp+'.colorEntryList[2].position', 0)
-        
+
         cmds.setAttr(sclera_vein_noise_threshold+'.type', 1)
         cmds.setAttr(sclera_vein_noise_threshold+'.interpolation', 2)
         cmds.setAttr(sclera_vein_noise_threshold+'.colorEntryList[0].color', 1, 1, 1)
@@ -129,20 +130,48 @@ def buildScleraShadingNetwork():
         cmds.setAttr(sclera_vein_noise_threshold+'.colorEntryList[3].position', 0.045)
         cmds.setAttr(sclera_vein_noise_threshold+'.noise', 0.114)
         cmds.setAttr(placeFractalTex+'.repeatUV', 0.5, 2)
-        
+
         cmds.setAttr(sclera_noise+'.ratio', 0.5)
         cmds.setAttr(sclera_noise+'.levelMax', 5)
-        
+
         cmds.setAttr(sclera_vein_noise+'.frequencyRatio', 3)
         cmds.setAttr(sclera_vein_noise+'.bias', 0.6)
         cmds.setAttr(sclera_vein_noise+'.inflection', True)
-        
+
         cmds.setAttr(sclera_bump+'.bumpDepth', 0.15)
         cmds.setAttr(sclera_bump+'.adjustEdges', True)
         cmds.setAttr(sclera_vein_noise_bump_md+'.operation', 1)
         cmds.setAttr(sclera_vein_noise_bump_md+'.input2', 0.1, 0.1, 0.1)
-        
-        #rename nodes
+
+        # build sclera shader based on renderer
+        if gRenderer == "mayatomr":
+            #add mia_material_shader
+            sclera_shd=cmds.shadingNode('mia_material_x', asShader=True)
+            shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=sclera_shd+'SG')
+            cmds.setAttr(sclera_shd+'.diffuse_roughness', 0.3)
+            cmds.setAttr(sclera_shd+'.reflectivity', 0.5)
+            cmds.connectAttr(sclera_shd+'.message', shadingGrp+'.miMaterialShader')
+            cmds.connectAttr(sclera_shd+'.message', shadingGrp+'.miPhotonShader')
+            cmds.connectAttr(sclera_shd+'.message', shadingGrp+'.miShadowShader')
+            cmds.connectAttr(sclera_col_gamma+'.outValue', sclera_shd+'.diffuse')
+            cmds.connectAttr(sclera_bump+'.outNormal', sclera_shd+'.overall_bump')
+        elif gRenderer == "mtoa":
+            sclera_shd = cmds.shadingNode('aiStandard', asShader=True)
+            shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=sclera_shd+'SG')
+            cmds.setAttr(sclera_shd+'.Kd', 1.0)
+            cmds.setAttr(sclera_shd+'.diffuseRoughness', 0.3)
+            cmds.setAttr(sclera_shd+'.Ks', 0.8)
+            cmds.setAttr(sclera_shd+'.specularRoughness', 0.05)
+            cmds.setAttr(sclera_shd+'.specularFresnel', 1)
+            cmds.setAttr(sclera_shd + '.Ksn', 0.1)
+            cmds.connectAttr(sclera_shd+'.outColor', shadingGrp+'.surfaceShader')
+            cmds.connectAttr(sclera_bump+'.outNormal', sclera_shd+'.normalCamera')
+            cmds.connectAttr(sclera_col_gamma+'.outValue', sclera_shd+'.color')
+        else:
+            # maya default material will be used
+            pass
+
+        # rename nodes
         cmds.rename(sclera_shd, 'sclera_shd')
         cmds.rename(shadingGrp, 'sclera_shdSG')
         cmds.rename(sclera_col_gamma, 'sclera_col_gamma')
@@ -157,24 +186,19 @@ def buildScleraShadingNetwork():
         cmds.rename(sclera_bump_ramp, 'sclera_bump_ramp')
         cmds.rename(sclera_noise, 'sclera_noise')
         cmds.rename(sclera_vein_noise, 'sclera_vein_noise')
+
 #     except:
 #         cmds.namespace(set=':')
 #         print 'what?'
 
 def buildCorneaShadingNetwork():
 #     try:
-        #add mia_material_shader
-        cornea_shd=cmds.shadingNode('mia_material_x', asShader=True)
-        shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=cornea_shd+'SG')
-        cmds.connectAttr(cornea_shd+'.message', shadingGrp+'.miMaterialShader')
-        cmds.connectAttr(cornea_shd+'.message', shadingGrp+'.miPhotonShader')
-        cmds.connectAttr(cornea_shd+'.message', shadingGrp+'.miShadowShader')
-        
-        #add utility shaders
+
+        # add utility shaders
         cornea_col_gamma=cmds.shadingNode('gammaCorrect', asUtility=True)
         cornea_noise_rev=cmds.shadingNode('reverse', asUtility=True)
-        
-        #add texture shaders
+
+        # add texture shaders
         cornea_trans_ramp=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', cornea_trans_ramp+'.uv')
@@ -187,27 +211,22 @@ def buildCorneaShadingNetwork():
         placeFractalTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeFractalTex+'.outUV', cornea_noise+'.uv')
         cmds.connectAttr(placeFractalTex+'.outUvFilterSize', cornea_noise+'.uvFilterSize')
-        
-        #connect nodes
-        cmds.connectAttr(cornea_col_gamma+'.outValue', cornea_shd+'.diffuse')
-        cmds.connectAttr(cornea_trans_ramp+'.outColorR', cornea_shd+'.transparency')
+
+        # connect nodes
         cmds.connectAttr(cornea_col_ramp+'.outColor', cornea_col_gamma+'.value')
         cmds.connectAttr(cornea_noise+'.outColor', cornea_col_ramp+'.colorOffset')
         cmds.connectAttr(cornea_noise+'.outColor', cornea_noise_rev+'.input')
         cmds.connectAttr(cornea_noise_rev+'.output', cornea_col_ramp+'.colorGain')
-    
-        #set node attributes
-        cmds.setAttr(cornea_shd+'.diffuse_roughness', 0.3)
-        cmds.setAttr(cornea_shd+'.reflectivity', 0.5)
-        cmds.setAttr(cornea_shd+'.refr_ior', 1.3)
+
+        # set node attributes
         cmds.setAttr(cornea_col_gamma+'.gamma', 0.455, 0.455, 0.455)
         cmds.setAttr(cornea_trans_ramp+'.type', 1)
         cmds.setAttr(cornea_trans_ramp+'.interpolation', 4)
-        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[0].color', 1, 1, 1)
+        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[0].color', 0, 0, 0)
         cmds.setAttr(cornea_trans_ramp+'.colorEntryList[0].position', 1)
-        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[1].color', 1, 1, 1)
+        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[1].color', 0, 0, 0)
         cmds.setAttr(cornea_trans_ramp+'.colorEntryList[1].position', 0.2)
-        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[2].color', 0, 0, 0)
+        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[2].color', 1, 1, 1)
         cmds.setAttr(cornea_trans_ramp+'.colorEntryList[2].position', 0)
         cmds.setAttr(cornea_col_ramp+'.colorEntryList[0].color', 0.875, 0.922, 0.950)
         cmds.setAttr(cornea_col_ramp+'.colorEntryList[0].position', 0)
@@ -215,31 +234,55 @@ def buildCorneaShadingNetwork():
         cmds.setAttr(cornea_noise+'.levelMax', 5)
         cmds.setAttr(placeFractalTex+'.coverage', 4, 1)
         cmds.setAttr(placeFractalTex+'.translateFrame', 4, 0)
-        
-        #rename nodes
+
+        # build cornea shader based on renderer
+        if gRenderer == "mayatomr":
+            #add mia_material_shader
+            cornea_shd=cmds.shadingNode('mia_material_x', asShader=True)
+            shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=cornea_shd+'SG')
+            cmds.connectAttr(cornea_shd+'.message', shadingGrp+'.miMaterialShader')
+            cmds.connectAttr(cornea_shd+'.message', shadingGrp+'.miPhotonShader')
+            cmds.connectAttr(cornea_shd+'.message', shadingGrp+'.miShadowShader')
+            cmds.setAttr(cornea_shd+'.diffuse_roughness', 0.3)
+            cmds.setAttr(cornea_shd+'.reflectivity', 0.5)
+            cmds.setAttr(cornea_shd+'.refr_ior', 1.3)
+            cmds.connectAttr(cornea_col_gamma+'.outValue', cornea_shd+'.diffuse')
+            cmds.connectAttr(cornea_trans_ramp+'.outColorR', cornea_shd+'.transparency')
+        elif gRenderer == "mtoa":
+            cornea_shd = cmds.shadingNode('aiStandard', asShader=True)
+            shadingGrp = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=cornea_shd + 'SG')
+            cmds.setAttr(cornea_shd + '.diffuseRoughness', 0.3)
+            cmds.setAttr(cornea_shd + '.Ks', 0.8)
+            cmds.setAttr(cornea_shd + '.specularRoughness', 0.05)
+            cmds.setAttr(cornea_shd + '.specularFresnel', 1)
+            cmds.setAttr(cornea_shd + '.Ksn', 0.1)
+            cmds.setAttr(cornea_shd + '.Kt', 1)
+            cmds.setAttr(cornea_shd + '.IOR', 1.37)
+            cmds.connectAttr(cornea_shd + '.outColor', shadingGrp + '.surfaceShader')
+            cmds.connectAttr(cornea_trans_ramp + '.outAlpha', cornea_shd + '.Kd')
+            cmds.connectAttr(cornea_col_gamma + '.outValue', cornea_shd + '.color')
+        else:
+            # maya default material will be used
+            pass
+
+        # rename nodes
         cmds.rename(cornea_col_ramp, 'cornea_col_ramp')
         cmds.rename(cornea_trans_ramp, 'cornea_trans_ramp')
         cmds.rename(cornea_noise, 'cornea_noise')
         cmds.rename(cornea_col_gamma, 'cornea_col_gamma')
         cmds.rename(cornea_shd, 'cornea_shd')
-        cmds.rename(shadingGrp,'cornea_shdSG')
+        cmds.rename(shadingGrp, 'cornea_shdSG')
 #     except:
 #         cmds.namespace(set=':')
 
 def buildIrisShadingNetwork():
 #     try:
-        #add mia_material_shader
-        iris_shd=cmds.shadingNode('mia_material_x', asShader=True)
-        shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=iris_shd+'SG')
-        cmds.connectAttr(iris_shd+'.message', shadingGrp+'.miMaterialShader')
-        cmds.connectAttr(iris_shd+'.message', shadingGrp+'.miPhotonShader')
-        cmds.connectAttr(iris_shd+'.message', shadingGrp+'.miShadowShader')
-        
-        #add utility shaders
+
+        # add utility shaders
         iris_col_gamma=cmds.shadingNode('gammaCorrect', asUtility=True)
         iris_col_pma=cmds.shadingNode('plusMinusAverage', asUtility=True)
-        
-        #add texture shaders
+
+        # add texture shaders
         iris_base_col_ramp=cmds.shadingNode('ramp', asTexture=True)
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', iris_base_col_ramp+'.uv')
@@ -249,23 +292,20 @@ def buildIrisShadingNetwork():
         placeTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeTex+'.outUV', iris_col_ramp+'.uv')
         cmds.connectAttr(placeTex+'.outUvFilterSize', iris_col_ramp+'.uvFilterSize')
-        
+
         fractal=cmds.shadingNode('fractal', asTexture=True)
         placeFractalTex=cmds.shadingNode('place2dTexture', asUtility=True)
         cmds.connectAttr(placeFractalTex+'.outUV', fractal+'.uv')
         cmds.connectAttr(placeFractalTex+'.outUvFilterSize', fractal+'.uvFilterSize')
-        
-        #connect nodes
-        cmds.connectAttr(iris_col_gamma+'.outValue', iris_shd+'.diffuse')
+
+        # connect nodes
         cmds.connectAttr(iris_col_pma+'.output3D', iris_col_gamma+'.value')
         cmds.connectAttr(iris_col_ramp+'.outColor', iris_col_pma+'.input3D[0]')
         cmds.connectAttr(iris_base_col_ramp+'.outColor', iris_col_pma+'.input3D[1]')
         cmds.connectAttr(fractal+'.outColor', iris_col_ramp+'.colorGain')
-        
-    
-        #set node attributes
-        cmds.setAttr(iris_shd+'.reflectivity', 0)
-        
+
+
+        # set node attributes
         cmds.setAttr(iris_col_gamma+'.gamma', 0.4, 0.4, 0.4)
         cmds.setAttr(iris_base_col_ramp+'.type', 1)
         cmds.setAttr(iris_base_col_ramp+'.interpolation', 4)
@@ -277,7 +317,7 @@ def buildIrisShadingNetwork():
         cmds.setAttr(iris_base_col_ramp+'.colorEntryList[2].position', 0.515)
         cmds.setAttr(iris_base_col_ramp+'.colorEntryList[3].color', 0.088, 0.099, 0.132)
         cmds.setAttr(iris_base_col_ramp+'.colorEntryList[3].position', 0)
-    
+
         cmds.setAttr(iris_col_ramp+'.type', 1)
         cmds.setAttr(iris_col_ramp+'.interpolation', 4)
         cmds.setAttr(iris_col_ramp+'.colorEntryList[0].color', 0, 0, 0)
@@ -288,7 +328,7 @@ def buildIrisShadingNetwork():
         cmds.setAttr(iris_col_ramp+'.colorEntryList[2].position', 0.495)
         cmds.setAttr(iris_col_ramp+'.colorEntryList[3].color', 0.102, 0.107, 0.103)
         cmds.setAttr(iris_col_ramp+'.colorEntryList[3].position', 0.005)
-        
+
         cmds.setAttr(fractal+'.amplitude', 0.85)
         cmds.setAttr(fractal+'.threshold', 0.15)
         cmds.setAttr(fractal+'.ratio', 0.5)
@@ -296,15 +336,39 @@ def buildIrisShadingNetwork():
         cmds.setAttr(fractal+'.levelMax', 5)
         cmds.setAttr(placeFractalTex+'.repeatUV', 0.15, 2)
         cmds.setAttr(placeFractalTex+'.noiseUV', 0.002, 0.002)
-        
-        #rename nodes
+
+        # build iris shader based on renderer
+        if gRenderer == "mayatomr":
+            #add mia_material_shader
+            iris_shd=cmds.shadingNode('mia_material_x', asShader=True)
+            shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=iris_shd+'SG')
+            cmds.connectAttr(iris_shd+'.message', shadingGrp+'.miMaterialShader')
+            cmds.connectAttr(iris_shd+'.message', shadingGrp+'.miPhotonShader')
+            cmds.connectAttr(iris_shd+'.message', shadingGrp+'.miShadowShader')
+            cmds.setAttr(iris_shd+'.reflectivity', 0)
+            cmds.connectAttr(iris_col_gamma+'.outValue', iris_shd+'.diffuse')
+        elif gRenderer == "mtoa":
+            iris_shd = cmds.shadingNode('aiStandard', asShader=True)
+            shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=iris_shd+'SG')
+            cmds.setAttr(iris_shd+'.Kd', 1.0)
+            cmds.setAttr(iris_shd+'.Ks', 0.05)
+            cmds.setAttr(iris_shd+'.specularRoughness', 0.8)
+            cmds.setAttr(iris_shd+'.specularFresnel', 1)
+            cmds.setAttr(iris_shd + '.Ksn', 0.1)
+            cmds.connectAttr(iris_shd+'.outColor', shadingGrp+'.surfaceShader')
+            cmds.connectAttr(iris_col_gamma+'.outValue', iris_shd+'.color')
+        else:
+            # maya default material will be used
+            pass
+
+        # rename nodes
+        cmds.rename(iris_shd, 'iris_shd')
+        cmds.rename(shadingGrp,'iris_shdSG')
         cmds.rename(iris_col_ramp, 'iris_col_ramp')
         cmds.rename(iris_base_col_ramp, 'iris_base_col_ramp')
         cmds.rename(fractal, 'fractal')
         cmds.rename(iris_col_gamma, 'iris_col_gamma')
         cmds.rename(iris_col_pma, 'iris_col_pma')
-        cmds.rename(iris_shd, 'iris_shd')
-        cmds.rename(shadingGrp,'iris_shdSG')
 #     except:
 #         cmds.namespace(set=':')
 
@@ -314,15 +378,20 @@ def buildPupilShadingNetwork():
         pupil_shd=cmds.shadingNode('surfaceShader', asShader=True)
         shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=pupil_shd+'SG')
         cmds.connectAttr(pupil_shd+'.outColor', shadingGrp+'.surfaceShader')
-        
+
         #rename nodes
         cmds.rename(pupil_shd, 'pupil_shd')
         cmds.rename(shadingGrp, 'pupil_shdSG')
 #     except:
 #         cmds.namespace(set=':')
 #     
-    
+
 def createNew(*args):
+        global gRenderer
+        gRenderer = checkRenderPlugin()
+        if not gRenderer:
+            cmds.warning("{0} not found. Only partial shading network will be built.".format(gRenderPlugins))
+
 #     try:
         cnt=1
         nameSpace='eyeball'+str(cnt)
@@ -332,51 +401,51 @@ def createNew(*args):
         cmds.namespace(add=nameSpace)
         cmds.namespace(set=nameSpace)
         gNameSpace=nameSpace
-        
+
         buildEyeballGeo()
-        
+
         buildIrisShadingNetwork()
         cmds.select(nameSpace+':irisGeo')
         cmds.hyperShade(assign=nameSpace+':iris_shd')
-        
+
         buildPupilShadingNetwork()
         cmds.select(nameSpace+':pupilGeo')
         cmds.hyperShade(assign=nameSpace+':pupil_shd')
-    
+
         buildScleraShadingNetwork()
         cmds.select(nameSpace+':eyeballSphere')
-        cmds.hyperShade(assign=nameSpace+':sclera_shd')   
-        
+        cmds.hyperShade(assign=nameSpace+':sclera_shd')
+
         buildCorneaShadingNetwork()
         cmds.select(nameSpace+':corneaGeo')
-        cmds.hyperShade(assign=nameSpace+':cornea_shd')    
-        
+        cmds.hyperShade(assign=nameSpace+':cornea_shd')
+
         cmds.select(gNameSpace+':eyeballCtrler', r=True)
         setCurrent()
-        
+
         cmds.namespace(set=':')
         gNameSpace=':'
 #     except:
 #         cmds.namespace(set=':')
 
-    
+
 def UI():
     print 'enterUI'
     if cmds.window('eyeballWindow', exists=True):
         cmds.deleteUI('eyeballWindow')
-        
-    window=cmds.window('eyeballWindow', title='eyeball editor', w=300, h=320, mnb=False, mxb=False, sizeable=False)
-    
-    mainLayout=cmds.columnLayout(w=300, h=320, columnOffset=('both',10), columnAlign="center")
-    
-    #banner image
+
+    window=cmds.window('eyeballWindow', title='eyeball editor', w=300, h=300, mnb=False, mxb=False, sizeable=False)
+
+    mainLayout=cmds.columnLayout(w=300, h=300, columnOffset=('both',0))
+
+    # banner image
     imagePath=cmds.internalVar(upd=True)+"icon/eyeballBanner.jpg"
     cmds.image(image=imagePath, w=280)
     cmds.separator(h=15, style='none')
     cmds.text('objInfo', label='current controler: '+gEyeballCtrler, align='left')
     cmds.separator(h=5, style='none')
 
-    #input editor
+    # input editor
     cmds.rowColumnLayout(numberOfColumns=2, cw=[(1,100),(2,180)], columnOffset=[(1,'both',5),(2,'both',5)])
     cmds.text('iris_size', align='left')
     cmds.floatField('irisSizeField', value=gDefaultIrisValue, cc=setIrisSize)
@@ -386,22 +455,22 @@ def UI():
     cmds.floatField('corneaBulgeField', value=gDefaultCorneaBulgeValue, cc=setCorneaBulge)
     cmds.text('iris_concave', align='left')
     cmds.floatField('irisConcaveField', value=gDefaultIrisConcaveValue, cc=setIrisConcave)
-    
-    #check box
+
+    # check box
     cmds.checkBox('scleraVeinChkBox', label='sclera_vein', value=True, cc=setScleraVein)
-    
-    #buttons
-    cmds.setParent(mainLayout)   
+
+    # buttons
+    cmds.setParent(mainLayout)
     cmds.separator(h=15, style='none')
     cmds.rowColumnLayout(numberOfColumns=2, cw=[(1,100),(2,180)], columnOffset=[(1,'both',5),(2,'both',5)])
     cmds.button(label='reset values', c=reset)
     cmds.button(label='create new', c=createNew)
     cmds.button(label='set current', c=setCurrent)
     cmds.separator(h=5, style='none')
-        
+
     cmds.showWindow(window)
-    
-    
+
+
 def setScleraVein(*args):
     print"gnamespace"
     print gNameSpace
@@ -415,7 +484,7 @@ def setScleraVein(*args):
 
 def setCurrent(*args):
     selected=cmds.ls(selection=True)
-    
+
     if len(selected)!=1:
         cmds.error('More than one object selected. Please select only one eyeControler.')
     else:
@@ -425,21 +494,21 @@ def setCurrent(*args):
             irisValue=cmds.getAttr(nodeName+'.irisSize')
             irisConcave=cmds.getAttr(nodeName+'.irisConcave')
             corneaBulge=cmds.getAttr(nodeName+'.corneaBulge')
-            
+
             gPupilValue=pupilValue
             gIrisValue=irisValue
             gIrisConcave=irisConcave
             gCorneaBulge=corneaBulge
-            
+
             global gEyeballCtrler
-            gEyeballCtrler=nodeName   
-            
+            gEyeballCtrler=nodeName
+
             cmds.text('objInfo', edit=True, label='current controler: '+gEyeballCtrler)
             cmds.floatField('pupilSizeField', edit=True, value=pupilValue)
             cmds.floatField('irisSizeField', edit=True, value=irisValue)
             cmds.floatField('irisConcaveField', edit=True, value=irisConcave)
             cmds.floatField('corneaBulgeField', edit=True, value=corneaBulge)
-            
+
             global gNameSpace
             gNameSpace=nodeName.rsplit(':', 1)[0]
             print gNameSpace
@@ -452,7 +521,7 @@ def setCurrent(*args):
 
         except:
             cmds.error('Eyeball attributes missing. This command requires one eyeControler object to be selected.')
-   
+
 def reset(*args):
     if len(gEyeballCtrler)==0:
         cmds.error('Please set current eyeball controler.')
@@ -465,7 +534,7 @@ def reset(*args):
         cmds.floatField('irisSizeField', edit=True, value=gDefaultIrisValue)
         cmds.floatField('irisConcaveField', edit=True, value=gDefaultIrisConcaveValue)
         cmds.floatField('corneaBulgeField', edit=True, value=gDefaultCorneaBulgeValue)
-    
+
 def setPupilSize(*args):
     print args
     if len(gEyeballCtrler)==0:
@@ -473,7 +542,7 @@ def setPupilSize(*args):
     else:
         gPupilValue=args[0]
         cmds.setAttr(gEyeballCtrler+'.pupilSize', gPupilValue)
-       
+
 def setIrisSize(*args):
     print args
     if len(gEyeballCtrler)==0:
@@ -481,7 +550,7 @@ def setIrisSize(*args):
     else:
         gIrisValue=args[0]
         cmds.setAttr(gEyeballCtrler+'.irisSize', gIrisValue)
-        
+
 def setIrisConcave(*args):
     print args
     if len(gEyeballCtrler)==0:
@@ -496,7 +565,7 @@ def setCorneaBulge(*args):
         cmds.error('Please set current eyeball controler.')
     else:
         gCorneaBulgeValue=args[0]
-        cmds.setAttr(gEyeballCtrler+'.corneaBulge', gCorneaBulgeValue)        
+        cmds.setAttr(gEyeballCtrler+'.corneaBulge', gCorneaBulgeValue)
 
 def linstep(start, end, para):
     if para>=end:
@@ -506,16 +575,16 @@ def linstep(start, end, para):
     else:
         return (para-start)/(end-start)
 
-def buildEyeballGeo():  
+def buildEyeballGeo():
 #     try:
-    #create eyeball controler-----------------------------------------------------------------------------------------
+    # create eyeball controler-----------------------------------------------------------------------------------------
         gEyeballCtrler=cmds.spaceLocator()[0]
         cmds.addAttr(longName='pupilSize', attributeType='float', keyable=True, defaultValue=gDefaultPupilValue)
         cmds.addAttr(longName='irisSize', attributeType='float', keyable=True, defaultValue=gDefaultIrisValue)
         cmds.addAttr(longName='irisConcave', attributeType='float', keyable=True, defaultValue=gDefaultIrisConcaveValue)
         cmds.addAttr(longName='corneaBulge', attributeType='float', keyable=True, defaultValue=gDefaultCorneaBulgeValue)
 
-    #cornea-----------------------------------------------------------------------------------------
+    # cornea-----------------------------------------------------------------------------------------
         #create eyeball base geometry and detach
         eyeballSphere=cmds.sphere(sections=20, spans=20, axis=(0,0,1), radius=0.5)[0]
     #     eyeballSphere=eyeballSphere[0]
@@ -524,10 +593,10 @@ def buildEyeballGeo():
         corneaDetach=pieceNames[2];
         cmds.parent(eyeballSphere, gEyeballCtrler, relative=True)
         cmds.parent(corneaGeo, gEyeballCtrler, relative=True)
-        
+
         #rebuild corneaGeo
         cmds.rebuildSurface(corneaGeo, ch=1, rpo=1, rt=0, end=1, kr=0, kcp=0, kc=0, su=36, du=3, sv=1, dv=3, tol=0.01, fr=0, dir=0)
-    
+
         #add lattice and deform cornea
         cmds.select(corneaGeo)
         (corneaLat,corneaLatGeo,corneaLatGeoBase)= cmds.lattice(dv=(2,2,6), oc=False)
@@ -535,21 +604,26 @@ def buildEyeballGeo():
         cmds.setAttr(corneaLatGeoBase+'.scale', 1.1, 1.1, 1.1)
         cmds.setAttr(corneaGeo+'.overrideEnabled', 1)
         cmds.setAttr(corneaGeo+'.overrideColor', 3)
-        
+
         corneaDetachRider=cmds.createNode('transform')
         corneaDeformGrp=cmds.createNode('transform')
         corneaRadius=cmds.createNode('transform')
-                
+
         cmds.parent(corneaDeformGrp, corneaDetachRider, relative=True)
         cmds.parent(corneaRadius, corneaDetachRider, relative=True)
         cmds.parent(corneaLatGeo, corneaDeformGrp, relative=True)
         cmds.parent(corneaLatGeoBase, corneaDeformGrp, relative=True)
         cmds.parent(corneaDetachRider, gEyeballCtrler, relative=True)
-        
+
         cmds.hide(corneaDetachRider)
-        
-        
-    #iris-----------------------------------------------------------------------------------------
+
+        # set opaque for Arnold render
+        if gRenderer == 'mtoa':
+            corneaGeoShape = cmds.listRelatives(corneaGeo, shapes=True)[0]
+            cmds.setAttr(corneaGeoShape+'.aiOpaque', 0)
+
+
+    # iris-----------------------------------------------------------------------------------------
         #create eyeball base geometry and detach
         eyeballSphere2=cmds.sphere(sections=20, spans=20, axis=(0,0,1), radius=0.5)[0]
         pieceNames = cmds.detachSurface(eyeballSphere2, ch=1, rpo=1, parameter=(0.1,20))
@@ -557,7 +631,7 @@ def buildEyeballGeo():
         irisDetach=pieceNames[2]
         cmds.delete(eyeballSphere2)
         cmds.parent(irisGeo, gEyeballCtrler, relative=True)
-    
+
         #add lattice and deform iris
         cmds.select(irisGeo)
         (irisLat,irisLatGeo,irisLatGeoBase) = cmds.lattice(dv=(2,2,2), oc=False)
@@ -567,30 +641,30 @@ def buildEyeballGeo():
         cmds.setAttr(irisLatGeoBase+'.translateZ', -0.5)
         cmds.setAttr(irisGeo+'.overrideEnabled', 1)
         cmds.setAttr(irisGeo+'.overrideColor', 13)
-        
+
         irisDetachRider=cmds.createNode('transform')
         irisDeformGrp=cmds.createNode('transform')
         irisRadius=cmds.createNode('transform')
-                
+
         cmds.parent(irisDeformGrp, irisDetachRider, relative=True)
         cmds.parent(irisRadius, irisDetachRider, relative=True)
         cmds.parent(irisLatGeo, irisDeformGrp, relative=True)
         cmds.parent(irisLatGeoBase, irisDeformGrp, relative=True)
         cmds.parent(irisDetachRider, gEyeballCtrler, relative=True)
-    
+
         cmds.hide(irisDetachRider)
-        
-    #pupil-----------------------------------------------------------------------------------------
-        #detach from iris geometry       
+
+    # pupil-----------------------------------------------------------------------------------------
+        #detach from iris geometry
         pieceNames = cmds.detachSurface(irisGeo, ch=1, rpo=1, parameter=(0.1,20))
         pupilGeo=pieceNames[0]
         pupilDetach=pieceNames[2]
         cmds.parent(pupilGeo, gEyeballCtrler, relative=True)
         cmds.setAttr(pupilGeo+'.overrideEnabled', 1)
         cmds.setAttr(pupilGeo+'.overrideColor', 17)
-        
-        
-    #connect attributes-----------------------------------------------------------------------------------------
+
+
+    # connect attributes-----------------------------------------------------------------------------------------
         expressionStr='''
                         //calculate cornea-related parameters
                         //cornea translate Z
@@ -622,9 +696,9 @@ def buildEyeballGeo():
                         float $pupil_par = max( (((1.0 - (('''+gEyeballCtrler+'''.pupilSize)*0.1)) * 10.0 ) + 10.0), $iris_par + 0.1 );
                         '''+pupilDetach+'''.parameter[0] = $pupil_par;
                         '''
-        
+
         cmds.expression(s=expressionStr)
-          
+
         #deform latticeGeo
         for x in range(0,2):
             for y in range(0,2):
@@ -634,14 +708,14 @@ def buildEyeballGeo():
                     cmds.setAttr(pointNameStr+'.zValue', ptTranslateZ*2+0.319)
 #                     cmds.select(pointNameStr)
 #                     cmds.move(0, 0, 0.05, r=True)
-     
-    #rename objects------------------------------------
+
+    # rename objects------------------------------------
         gEyeballCtrlerName='eyeballCtrler'
-        
+
         cmds.rename(gEyeballCtrler, gEyeballCtrlerName)
         cmds.rename(pupilGeo, 'pupilGeo')
         cmds.rename(pupilDetach, 'pupilDetach')
-        
+
         cmds.rename(irisLat, 'irisLat')
         cmds.rename(irisLatGeo, 'irisLatGeo')
         cmds.rename(irisLatGeoBase, 'irisLatGeoBase')
@@ -659,6 +733,6 @@ def buildEyeballGeo():
         cmds.rename(corneaDetachRider,'corneaDetachRider')
         cmds.rename(corneaDeformGrp,'corneaDeformGrp')
         cmds.rename(corneaRadius,'corneaRadius')
-        
+
 #     except:
 #         cmds.namespace(set=':')
