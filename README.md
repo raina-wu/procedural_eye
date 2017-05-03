@@ -5,7 +5,7 @@ I wrote this script a long time ago as an exercise when I first started to learn
 
 ## Requirements
 - Maya
-- Mental Ray
+- Arnold(prioritized)/Mental Ray
 
 ## Usage
 - Copy `eyeball.py` into your maya script folder
