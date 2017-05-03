@@ -11,7 +11,7 @@ gIrisConcaveValue = gDefaultIrisConcaveValue
 gEyeballCtrler = ''
 gNameSpace = ':'
 gRenderer = None
-gRenderPlugins = ["mtoa", "mayatomr"]
+gRenderPlugins = ["mtoa", "Mayatomr"]
 
 def run():
     UI()
@@ -144,7 +144,7 @@ def buildScleraShadingNetwork():
         cmds.setAttr(sclera_vein_noise_bump_md+'.input2', 0.1, 0.1, 0.1)
 
         # build sclera shader based on renderer
-        if gRenderer == "mayatomr":
+        if gRenderer == "Mayatomr":
             #add mia_material_shader
             sclera_shd=cmds.shadingNode('mia_material_x', asShader=True)
             shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=sclera_shd+'SG')
@@ -222,12 +222,12 @@ def buildCorneaShadingNetwork():
         cmds.setAttr(cornea_col_gamma+'.gamma', 0.455, 0.455, 0.455)
         cmds.setAttr(cornea_trans_ramp+'.type', 1)
         cmds.setAttr(cornea_trans_ramp+'.interpolation', 4)
-        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[0].color', 0, 0, 0)
-        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[0].position', 1)
         cmds.setAttr(cornea_trans_ramp+'.colorEntryList[1].color', 0, 0, 0)
-        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[1].position', 0.2)
+        entryPosition = 0.2 if gRenderer=='mtoa' else 0
+        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[1].position', entryPosition)
         cmds.setAttr(cornea_trans_ramp+'.colorEntryList[2].color', 1, 1, 1)
-        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[2].position', 0)
+        entryPosition = 0 if gRenderer=='mtoa' else 0.2
+        cmds.setAttr(cornea_trans_ramp+'.colorEntryList[2].position', entryPosition)
         cmds.setAttr(cornea_col_ramp+'.colorEntryList[0].color', 0.875, 0.922, 0.950)
         cmds.setAttr(cornea_col_ramp+'.colorEntryList[0].position', 0)
         cmds.setAttr(cornea_noise+'.ratio', 0.5)
@@ -236,7 +236,7 @@ def buildCorneaShadingNetwork():
         cmds.setAttr(placeFractalTex+'.translateFrame', 4, 0)
 
         # build cornea shader based on renderer
-        if gRenderer == "mayatomr":
+        if gRenderer == "Mayatomr":
             #add mia_material_shader
             cornea_shd=cmds.shadingNode('mia_material_x', asShader=True)
             shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=cornea_shd+'SG')
@@ -338,7 +338,7 @@ def buildIrisShadingNetwork():
         cmds.setAttr(placeFractalTex+'.noiseUV', 0.002, 0.002)
 
         # build iris shader based on renderer
-        if gRenderer == "mayatomr":
+        if gRenderer == "Mayatomr":
             #add mia_material_shader
             iris_shd=cmds.shadingNode('mia_material_x', asShader=True)
             shadingGrp=cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=iris_shd+'SG')
@@ -391,6 +391,8 @@ def createNew(*args):
         gRenderer = checkRenderPlugin()
         if not gRenderer:
             cmds.warning("{0} not found. Only partial shading network will be built.".format(gRenderPlugins))
+        else:
+            cmds.warning("Please use {0} to render.".format(gRenderer))
 
 #     try:
         cnt=1
